@@ -1,4 +1,13 @@
-# SyncCode — Real-Time Collaborative IDE & Sandboxed Execution Engine
+# SyncCode — Real-Time Collaborative IDE & Execution Engine
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Yjs-CRDT-orange?style=for-the-badge" alt="Yjs" />
+  <img src="https://img.shields.io/badge/Monaco_Editor-vs--dark-007acc?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="Monaco" />
+  <img src="https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.io" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/License-ISC-green?style=for-the-badge" alt="License" />
+</p>
 
 SyncCode is a low-latency, distributed pair-programming environment engineered with **Yjs Conflict-Free Replicated Data Types (CRDTs)**, **Socket.IO WebSockets**, **Monaco Editor**, and a **Sandboxed Remote Code Execution Engine**.
 
@@ -6,47 +15,54 @@ Designed to handle concurrent multi-user editing with mathematical guarantees of
 
 ---
 
+## Live Multi-User Pair Programming Demo
+
+Two concurrent users editing and executing code in the same isolated room (`room: tcrax`) with real-time awareness and synchronized compiler outputs:
+
+| Client A (`Krishnakant Yadav` in Chrome) | Client B (`Kay` in Brave) |
+| :---: | :---: |
+| ![Client A Screenshot](assets/preview-client-a.png) | ![Client B Screenshot](assets/preview-client-b.png) |
+
+---
+
 ## Architecture Overview
 
 ```mermaid
 flowchart TD
-    subgraph Clients ["Collaborators (Browsers)"]
-        UserA["Client A (Alice)"]
-        UserB["Client B (Bob)"]
-        UserC["Client C (Charlie)"]
+    subgraph Clients["Clients (Browsers)"]
+        ClientA["Client A (Alice)"]
+        ClientB["Client B (Bob)"]
     end
 
-    subgraph FrontendEngine ["Frontend Client Core"]
-        Monaco["Monaco Editor"]
-        YMonaco["y-monaco Binding"]
-        YDocLocal["Local Y.Doc (CRDT)"]
-        Awareness["Awareness Protocol (Cursors/Presence)"]
+    subgraph Frontend["Frontend Client Architecture"]
+        Monaco["Monaco Code Editor"]
+        Binding["y-monaco Binding"]
+        CRDT["Local Y.Doc (CRDT)"]
+        Awareness["Awareness Protocol (Cursors & Presence)"]
     end
 
-    subgraph Gateway ["Node.js / Express Backend"]
-        WSServer["Socket.IO Server"]
-        YSocketIO["y-socket.io Provider"]
-        ExecAPI["/api/execute Handler"]
+    subgraph Backend["Node.js / Express Gateway"]
+        SocketServer["Socket.IO Server"]
+        YServer["y-socket.io Provider"]
+        API["Execution API (/api/execute)"]
     end
 
-    subgraph ExecutionSandbox ["Remote Sandboxed Runner"]
-        SandboxWorker["Compiler & Runtime Engine"]
+    subgraph Sandbox["Sandboxed Execution Engine"]
+        Runner["Remote Compiler / Sandbox Runner"]
     end
 
-    UserA <--> |WebSocket Binary Sync| WSServer
-    UserB <--> |WebSocket Binary Sync| WSServer
-    UserC <--> |WebSocket Binary Sync| WSServer
+    ClientA <-->|WebSocket Binary Protocol| SocketServer
+    ClientB <-->|WebSocket Binary Protocol| SocketServer
 
-    WSServer <--> YSocketIO
-    UserA --- Monaco
-    Monaco <--> YMonaco
-    YMonaco <--> YDocLocal
-    YDocLocal <--> Awareness
+    SocketServer --- YServer
+    Monaco <--> Binding
+    Binding <--> CRDT
+    CRDT --- Awareness
 
-    UserA --> |Run Code (REST)| ExecAPI
-    ExecAPI --> SandboxWorker
-    SandboxWorker --> |Stdout / Stderr / Exit Code| ExecAPI
-    ExecAPI --> |Execution Metrics| UserA
+    ClientA -->|HTTP POST Code & Stdin| API
+    API --> Runner
+    Runner -->|Stdout, Stderr & Exit Code| API
+    API -->|JSON Execution Metrics| ClientA
 ```
 
 ---
@@ -66,7 +82,7 @@ flowchart TD
 | Criterion | Operational Transformation (OT) | Conflict-Free Replicated Data Types (CRDTs) |
 | :--- | :--- | :--- |
 | **Architectural Model** | Centralized server required to serialize & transform operations | Decentralized / peer-to-peer capable; commutative operations |
-| **Complexity** | Exponential state combinations for concurrent transforms ($O(n^2)$) | Handled mathematically via unique item IDs and relative positioning |
+| **Complexity** | Exponential state combinations for concurrent transforms (`O(n²)`) | Handled mathematically via unique item IDs and relative positioning |
 | **Offline Resilience** | Fragile during network partitions; complex re-basing | Seamless local-first buffering and automatic state-vector diff merge |
 | **Scalability** | Server acts as a throughput bottleneck | Server acts merely as a lightweight binary relay |
 
@@ -76,6 +92,9 @@ flowchart TD
 
 ```
 collaborativeeditor/
+├── assets/                  # Live demo screenshots and architecture assets
+│   ├── preview-client-a.png
+│   └── preview-client-b.png
 ├── backend/
 │   ├── server.js            # Express, Socket.IO, YSocketIO gateway, code execution proxy
 │   └── package.json
@@ -114,4 +133,4 @@ npm run dev
 # Frontend runs on http://localhost:5173
 ```
 
-Open multiple browser tabs or incognito windows with the same `room` parameter to test multi-user real-time typing and execution!
+Open multiple browser tabs or incognito windows with the same `room` parameter (e.g. `?room=tcrax`) to test multi-user real-time typing and execution!
