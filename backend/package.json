@@ -3,15 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "test": "npm run backend",
-    "dev":"npx nodemon  server.js",
+    "dev": "npx nodemon  server.js",
     "start": "node server.js"
   },
   "author": "Krishnakant",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "socket.io": "^4.8.4",
     "y-socket.io": "^1.1.3"
